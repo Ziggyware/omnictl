@@ -217,6 +217,14 @@ fn apply_compression(content: &str, strategy: &CompressOption, opts: &CliOpts) -
 fn main() {
     let cli = Cli::parse();
 
+    // If user provided no arguments at all, show usage and exit.
+    if std::env::args().len() == 1 {
+        let mut cmd = Cli::command();
+        cmd.print_help().unwrap();
+        println!();
+        std::process::exit(0);
+    }
+
     if let Some(Commands::Complete { shell }) = cli.command {
         let mut cmd = Cli::command();
         generate(shell, &mut cmd, "omnictl", &mut io::stdout());
@@ -226,11 +234,8 @@ fn main() {
     let bpe = cl100k_base().unwrap();
     let now = SystemTime::now();
 
-    eprintln!("{}", "Initializing supreme ingestion pipeline (30 Features)...".cyan());
+    eprintln!("{}", "omnictl".cyan());
     
-    let churn_map = compute_git_churn(&cli.path, cli.co_commits);
-    let walker = WalkBuilder::new(&cli.path).hidden(true).parents(true).git_ignore(true).git_global(true).git_exclude(true).require_git(false).build();
-
     let mut files_data: Vec<FileData> = Vec::new();
     let (mut original_bytes, mut all_symbols, mut deps_summary, mut edge_graph) = (0, Vec::new(), String::new(), Vec::new());
 
@@ -239,6 +244,9 @@ fn main() {
         strip_dead_code: cli.strip_dead_code, truncate_strings: cli.truncate_strings, normalize_space: cli.normalize_space,
         scrub_hashes: cli.scrub_hashes, prune_outliers: cli.prune_outliers, chunk_split: cli.chunk_split,
     };
+
+    let churn_map = compute_git_churn(&cli.path, cli.co_commits);
+    let walker = WalkBuilder::new(&cli.path).hidden(true).parents(true).git_ignore(true).git_global(true).git_exclude(true).require_git(false).build();
 
     for result in walker {
         if let Ok(entry) = result {
